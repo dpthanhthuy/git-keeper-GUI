@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QTableWidgetItem, \
-    QVBoxLayout, QTableWidget, QToolBar, QAction
+    QVBoxLayout, QTableWidget, QToolBar, QAction, QPushButton
 from PyQt5.QtGui import QIcon
 from json import load
 from time import localtime
@@ -9,109 +9,301 @@ with open('info.json', 'r') as json_file:
     info = load(json_file)
 
 
-class JsonFile:
+class JsonInfo:
+    """Provides methods for extracting information from the info dictionary."""
 
-    def __init__(self, info_dict):
+    def __init__(self, info_dict: dict):
+        """
+        Create the object
+        :param info_dict: dictionary of info
+        """
+
         self.info_dict = info_dict
 
-    def class_number(self):
+    def class_count(self) -> int:
+        """
+        Get the number of classes.
+
+        :return: number of classes
+        """
+
         return len(self.info_dict)
 
-    def class_list(self):
-        return self.info_dict
+    def class_list(self) -> list:
+        """
+        Get the list of classes.
 
-    def class_info(self, class_name):
-        return self.info_dict.get(class_name)
+        :return: list of classes
+        """
 
-    def student_number(self, class_name):
-        return len(self.class_info(class_name).get('students'))
+        return list(self.info_dict.keys())
 
-    def student_list(self, class_name):
-        return self.class_info(class_name).get('students')
+    def student_count(self, class_name: str) -> int:
+        """
+        Get the number of students in a class.
 
-    def assignment_number(self, class_name):
-        return len(self.class_info(class_name).get('assignments'))
+        :param class_name: name of a class
+        :return: number of students in the class
+        """
 
-    def assignment_list(self, class_name):
-        return self.class_info(class_name).get('assignments')
+        return len(self.info_dict[class_name]['students'])
 
-    def assignment_info(self, class_name, assignment):
-        return self.assignment_list(class_name).get(assignment)
+    def student_list(self, class_name: str) -> list:
+        """
+        Get the list of the students in a class.
 
-    def is_published(self, class_name, assignment):
-        return self.assignment_info(class_name, assignment).get('published')
+        :param class_name: name of a class
+        :return: list of students in the class
+        """
 
-    def assignment_repo(self, class_name, assignment):
-        return self.assignment_info(class_name, assignment).get('reports_repo')
+        return list(self.info_dict[class_name]['students'])
 
-    def assignment_hash(self, class_name, assignment):
-        return self.assignment_repo(class_name, assignment).get('hash')
+    def assignment_count(self, class_name: str) -> int:
+        """
+        Get the number of assignments for a class.
 
-    def assignment_path(self, class_name, assignment):
-        return self.assignment_repo(class_name, assignment).get('path')
+        :param class_name: name of a class
+        :return: number of assignments for the class
+        """
 
-    def student_repo(self, class_name, assignment):
-        return self.assignment_info(class_name, assignment).\
-            get('students_repos')
+        return len(self.info_dict[class_name]['assignments'])
 
-    def number_students_submitted(self, class_name, assignment):
+    def assignment_list(self, class_name: str) -> list:
+        """
+        Get the info dictionary of assignments for a class.
+
+        :param class_name: name of a class
+        :return: info dictionary of assignments for a class
+        """
+
+        return list(self.info_dict[class_name]['assignments'])
+
+    def is_published(self, class_name: str, assignment: str) -> bool:
+        """
+        Determine if an assignment is published.
+
+        :param class_name: name of a class
+        :param assignment: name of an assignment
+        :return: True if the assignment is published, False otherwise
+        """
+
+        return self.info_dict[class_name][assignment]['published']
+
+    def assignment_hash(self, class_name: str, assignment: str) -> str:
+        """
+        Get the hash of an assignment.
+
+        :param class_name: name of a class
+        :param assignment: name of an assignment
+        :return: assignment's hash
+        """
+
+        return self.info_dict[class_name][assignment]['hash']
+
+    def assignment_path(self, class_name: str, assignment: str) -> str:
+        """
+        Get the path of an assignment.
+
+        :param class_name: name of a class
+        :param assignment: name of an assignment
+        :return: assignment's path
+        """
+
+        return self.info_dict[class_name][assignment]['path']
+
+    def student_submitted_count(self, class_name: str, assignment: str) -> int:
+        """
+        Get the number of students who submitted an assignment.
+
+        :param class_name: name of a class
+        :param assignment: name of an assignment
+        :return: number of students who submitted the assignment
+        """
+
         students_submitted = 0
         for student in self.student_list(class_name):
             if self.submission_count(class_name, assignment, student) != 0:
                 students_submitted += 1
         return students_submitted
 
-    def list_students_submitted(self, class_name, assignment):
-        students_submitted = {}
+    def students_submitted_list(self, class_name: str, assignment: str) \
+            -> list:
+        """
+        Get the info dictionary of students who submitted an assignment.
+
+        :param class_name: name of a class
+        :param assignment: name of an assignment
+        :return: info dictionary of students who submitted an assignment
+        """
+
+        students_submitted = []
         for student in self.student_list(class_name):
             if self.submission_count(class_name, assignment, student) != 0:
-                students_submitted[student] = self.an_assignment(
-                    class_name, assignment, student)
+                students_submitted.append(student)
         return students_submitted
 
-    def student_info(self, class_name, username):
-        return self.info_dict.get(class_name).get('students').get(username)
+    def email_address(self, class_name: str, username: str) -> str:
+        """
+        Get the email address of a student.
 
-    def email_address(self, class_name, username):
-        return self.student_info(class_name, username).get('email_address')
+        :param class_name: name of a class
+        :param username: username of a student
+        :return: student's email address
+        """
 
-    def first_name(self, class_name, username):
-        return self.student_info(class_name, username).get('first')
+        return self.info_dict[class_name]['students'][username][
+            'email_address']
 
-    def home_dir(self, class_name, username):
-        return self.student_info(class_name, username).get('home_dir')
+    def first_name(self, class_name: str, username: str) -> str:
+        """
+        Get the first name of a student.
 
-    def last_name(self, class_name, username):
-        return self.student_info(class_name, username).get('last')
+        :param class_name: name of a class
+        :param username: username of a student
+        :return: student's first name
+        """
 
-    def student_assignments(self, class_name, username):
-        student_assignments = {}
+        return self.info_dict[class_name]['students'][username]['first']
+
+    def home_dir(self, class_name: str, username: str) -> str:
+        """
+        Get the home directory of a student.
+
+        :param class_name: name of a class
+        :param username: username of a student
+        :return: student's home directory
+        """
+
+        return self.info_dict[class_name]['students'][username]['home_dir']
+
+    def last_name(self, class_name: str, username: str) -> str:
+        """
+        Get the last name of a student.
+
+        :param class_name: name of a class
+        :param username: username of a student
+        :return: student's last name
+        """
+
+        return self.info_dict[class_name]['students'][username]['last']
+
+    def assignments_by_student_list(self, class_name: str, username: str) \
+            -> list:
+        """
+        Get all the assignments for a student.
+
+        :param class_name: name of a student
+        :param username: username of a student
+        :return: an info dict of all the assignments for a student
+        """
+
+        student_assignments = []
         for an_assignment in self.assignment_list(class_name):
-            student_assignment = self.\
-                student_repo(class_name, an_assignment).get(username)
+            student_assignment = self.info_dict[class_name]['assignments'][
+                an_assignment]['students_repos'][username]
             if student_assignment is not None:
-                student_assignments[an_assignment] = student_assignment
+                student_assignments.append(an_assignment)
         return student_assignments
 
-    def an_assignment(self, class_name, assignment, username):
-        return self.student_assignments(class_name, username).get(assignment)
+    def assignment_by_student_hash(self, class_name: str, assignment: str,
+                                   username: str) -> str:
+        """
+        Get the hash of a student's assignment.
 
-    def student_assignment_hash(self, class_name, assignment, username):
-        return self.an_assignment(class_name, assignment, username).get('hash')
+        :param class_name: name of a class
+        :param assignment: name of an assignment
+        :param username: username of a student
+        :return: the hash of a student's assignment
+        """
+        return self.info_dict[class_name]['assignments'][assignment][
+            'students_repos'][username]['hash']
 
-    def student_assignment_path(self, class_name, assignment, username):
-        return self.an_assignment(class_name, assignment, username).get('path')
+    def assignment_by_student_path(self, class_name: str, assignment: str,
+                                   username: str) -> str:
+        """
+        Get the path of a student's assignment.
 
-    def submission_count(self, class_name, assignment, username):
-        return self.an_assignment(class_name, assignment, username).\
-            get('submission_count')
+        :param class_name: name of a class
+        :param assignment: name of an assignment
+        :param username: username of a student
+        :return: the path of a student's assignment
+        """
 
-    def time(self, class_name, assignment, username):
-        time = localtime(self.an_assignment(class_name, assignment, username).
-                         get('time'))
+        return self.info_dict[class_name]['assignments'][assignment][
+            'students_repos'][username]['path']
+
+    def submission_count(self, class_name: str, assignment: str,
+                         username: str) -> int:
+        """
+        Get the submission count of a student for an assignment.
+
+        :param class_name: name of a class
+        :param assignment: name of an assignment
+        :param username: username of a student
+        :return: student's submission count for an assignment
+        """
+
+        return self.info_dict[class_name]['assignments'][assignment][
+            'students_repos'][username]['submission_count']
+
+    def time(self, class_name: str, assignment: str, username: str):
+        """
+        Get the Unix time a student last submitted an assignment.
+
+        :param class_name: name of a class
+        :param assignment: name of an assignment
+        :param username: username of a student
+        :return: the Unix time a student last submitted an assignment.
+        """
+
+        return self.info_dict[class_name]['assignments'][assignment][
+            'students_repos'][username]['time']
+
+    def time_converted(self, class_name: str, assignment: str, username: str)\
+            -> str:
+        """
+        Get a string of the time a student last submitted an assignment
+        (month/day/year hour:min:second)
+
+        :param class_name: name of a class
+        :param assignment: name of an assignment
+        :param username: username of a student
+        :return: a string of the time a student last submitted an assignment
+        """
+
+        time = localtime(self.time(class_name, assignment, username))
         return '{0}/{1}/{2} {3}:{4}:{5}'.\
             format(time.tm_mon, time.tm_mday, time.tm_year,
                    time.tm_hour, time.tm_min, time.tm_sec)
+
+    def get_username_from_name(self, class_name: str, name: str) -> str:
+        """
+        Get the username of a student from his/her full name.
+
+        :param class_name: name of a class
+        :param name: a student's full name in the format
+        "last name, first name"
+        :return: student's username
+        """
+
+        for username in self.student_list(class_name):
+            name_form = '{0}, {1}'.format(
+                self.last_name(class_name, username),
+                self.first_name(class_name, username))
+            if name_form == name:
+                return username
+
+    def last_first_username(self, class_name: str, username: str) -> str:
+        """
+        Get the last name, first name, and username of a student.
+
+        :param class_name: name of a class
+        :param username: username of a student
+        :return: a string in the format "last name, first name, username"
+
+        """
+        return self.info_dict[class_name]['students'][username][
+            'last_first_username']
 
 
 class CreateTable(QWidget):
@@ -125,11 +317,14 @@ class CreateTable(QWidget):
         self.layout = QVBoxLayout()
         self.class_name = ''
         self.assignment = ''
+        self.username = ''
         self.tableClass = QTableWidget()
         self.tableAssignment = QTableWidget()
         self.tableAssignmentDetails = QTableWidget()
+        self.tableStudent = QTableWidget()
         self.toolbar = QToolBar(self)
         self.layout.addWidget(self.toolbar)
+        self.fetchSubmissionButton = QPushButton("Fetch", self.toolbar)
         self.backAction = QAction(QIcon('left_arrow.png'), 'Back', self)
         self.toolbar.addAction(self.backAction)
         self.init_ui()
@@ -138,38 +333,37 @@ class CreateTable(QWidget):
         self.setLayout(self.layout)
         self.create_table_class()
 
-    def close_table(self):
-        if not self.tableClass.close():
-            self.layout.removeWidget(self.tableClass)
-            self.tableClass.deleteLater()
-            self.tableClass = None
-        if not self.tableAssignment.close():
-            self.layout.removeWidget(self.tableAssignment)
-            self.tableAssignment.deleteLater()
-            self.tableAssignment = None
-        if not self.tableAssignmentDetails.close():
-            self.layout.removeWidget(self.tableAssignmentDetails)
-            self.tableAssignmentDetails.deleteLater()
-            self.tableAssignmentDetails = None
+    def close_table(self, table):
+        if not table.close():
+            self.layout.removeWidget(table)
+            table.deleteLater()
+            table = None
+
+    def close_all_tables(self):
+        self.close_table(self.tableClass)
+        self.close_table(self.tableAssignment)
+        self.close_table(self.tableAssignmentDetails)
+        self.close_table(self.tableStudent)
 
     def create_table_class(self):
-        self.close_table()
+        self.close_all_tables()
         self.backAction.setVisible(False)
+        self.fetchSubmissionButton.setVisible(False)
         self.tableClass = QTableWidget()
         self.layout.addWidget(self.tableClass)
         self.tableClass.show()
         self.setWindowTitle('Classes')
-        self.tableClass.setRowCount(JsonFile(info).class_number())
+        self.tableClass.setRowCount(JsonInfo(info).class_count())
         self.tableClass.setColumnCount(2)
         self.tableClass.setHorizontalHeaderItem(0, QTableWidgetItem("Name"))
         self.tableClass.\
             setHorizontalHeaderItem(1, QTableWidgetItem("Students"))
         row = 0
 
-        for a_class in JsonFile(info).class_list():
+        for a_class in JsonInfo(info).class_list():
             self.tableClass.setItem(row, 0, QTableWidgetItem(a_class))
             self.tableClass.setItem(row, 1, QTableWidgetItem(
-                str(JsonFile(info).student_number(a_class))))
+                str(JsonInfo(info).student_count(a_class))))
             row += 1
 
         self.tableClass.move(0, 0)
@@ -184,14 +378,15 @@ class CreateTable(QWidget):
         self.show()
 
     def create_table_assignments(self, class_name):
-        self.close_table()
+        self.close_all_tables()
         self.backAction.setVisible(True)
+        self.fetchSubmissionButton.setVisible(False)
         self.tableAssignment = QTableWidget()
         self.layout.addWidget(self.tableAssignment)
         self.tableAssignment.show()
         self.setWindowTitle('Assignments for {}'.format(class_name))
-        self.tableAssignment.setRowCount(JsonFile(info).
-                                         assignment_number(class_name))
+        self.tableAssignment.setRowCount(JsonInfo(info).
+                                         assignment_count(class_name))
         self.tableAssignment.setColumnCount(2)
         self.tableAssignment.\
             setHorizontalHeaderItem(0, QTableWidgetItem('Assignment name'))
@@ -199,11 +394,11 @@ class CreateTable(QWidget):
             setHorizontalHeaderItem(1, QTableWidgetItem('Submitted'))
         row = 0
 
-        for assignment in JsonFile(info).assignment_list(class_name):
+        for assignment in JsonInfo(info).assignment_list(class_name):
             self.tableAssignment.setItem(row, 0, QTableWidgetItem(assignment))
             self.tableAssignment.setItem(row, 1, QTableWidgetItem(
-                str(JsonFile(info).
-                    number_students_submitted(class_name, assignment))))
+                str(JsonInfo(info).
+                    student_submitted_count(class_name, assignment))))
             row += 1
 
         self.tableAssignment.setColumnWidth(0, 200)
@@ -221,14 +416,15 @@ class CreateTable(QWidget):
         self.setGeometry(self.left, self.top, self.width, self.height)
 
     def create_table_assignment_details(self, class_name, assignment):
-        self.close_table()
+        self.close_all_tables()
         self.backAction.setVisible(True)
+        self.fetchSubmissionButton.setVisible(False)
         self.tableAssignmentDetails = QTableWidget()
         self.layout.addWidget(self.tableAssignmentDetails)
         self.tableAssignmentDetails.show()
         self.setWindowTitle('Students for {}'.format(assignment))
-        self.tableAssignmentDetails.setRowCount(JsonFile(info).
-                                                student_number(class_name))
+        self.tableAssignmentDetails.setRowCount(JsonInfo(info).
+                                                student_count(class_name))
         self.tableAssignmentDetails.setColumnCount(3)
         self.tableAssignmentDetails.\
             setHorizontalHeaderItem(0, QTableWidgetItem('Name'))
@@ -238,16 +434,16 @@ class CreateTable(QWidget):
             2, QTableWidgetItem('Submission Count'))
         row = 0
 
-        for student in JsonFile(info).student_list(class_name):
+        for student in JsonInfo(info).student_list(class_name):
             self.tableAssignmentDetails.setItem(
                 row, 0, QTableWidgetItem('{0}, {1}'.format(
-                    JsonFile(info).last_name(class_name, student),
-                    JsonFile(info).first_name(class_name, student))))
+                    JsonInfo(info).last_name(class_name, student),
+                    JsonInfo(info).first_name(class_name, student))))
             self.tableAssignmentDetails.setItem(
                 row, 1, QTableWidgetItem(str(
-                    JsonFile(info).time(class_name, assignment, student))))
+                    JsonInfo(info).time_converted(class_name, assignment, student))))
             self.tableAssignmentDetails.setItem(
-                row, 2, QTableWidgetItem(str(JsonFile(info).submission_count(
+                row, 2, QTableWidgetItem(str(JsonInfo(info).submission_count(
                     class_name, assignment, student))))
             row += 1
 
@@ -256,6 +452,7 @@ class CreateTable(QWidget):
         self.tableAssignmentDetails.setColumnWidth(2, 150)
         self.tableAssignmentDetails.move(0, 0)
         self.tableAssignmentDetails.setSortingEnabled(True)
+        self.tableAssignmentDetails.doubleClicked.connect(self.double_click_student)
         self.backAction.triggered.connect(self.show_table_assignment)
         self.tableAssignmentDetails.setWordWrap(True)
         self.height = self.tableAssignmentDetails.rowHeight(0) * row + 110
@@ -263,6 +460,42 @@ class CreateTable(QWidget):
             self.tableAssignmentDetails.columnWidth(0) + \
             self.tableAssignmentDetails.columnWidth(1) + \
             self.tableAssignmentDetails.columnWidth(2) + 60
+        self.setGeometry(self.left, self.top, self.width, self.height)
+
+    def create_table_student(self, class_name, username):
+        self.close_all_tables()
+        self.backAction.setVisible(True)
+        self.fetchSubmissionButton.setVisible(True)
+        self.tableStudent = QTableWidget()
+        self.layout.addWidget(self.tableStudent)
+        self.tableStudent.show()
+        self.setWindowTitle('{0}, {1}'.format(
+            JsonInfo(info).last_name(class_name, username),
+            JsonInfo(info).first_name(class_name, username)))
+        self.tableStudent.setRowCount(len(JsonInfo(info).assignments_by_student_list(class_name, username)))
+        self.tableStudent.setColumnCount(3)
+        self.tableStudent.setHorizontalHeaderItem(0, QTableWidgetItem('Assignment'))
+        self.tableStudent.setHorizontalHeaderItem(1, QTableWidgetItem('Last submission time'))
+        self.tableStudent.setHorizontalHeaderItem(2, QTableWidgetItem('Submission count'))
+        row = 0
+
+        for assignment in JsonInfo(info).assignments_by_student_list(class_name, username):
+            self.tableStudent.setItem(row, 0, QTableWidgetItem(assignment))
+            self.tableStudent.setItem(row, 1, QTableWidgetItem(JsonInfo(info).time_converted(class_name, assignment, username)))
+            self.tableStudent.setItem(row, 2, QTableWidgetItem(str(JsonInfo(info).submission_count(class_name, assignment, username))))
+            row += 1
+
+        self.tableStudent.setColumnWidth(0, 200)
+        self.tableStudent.setColumnWidth(1, 200)
+        self.tableStudent.setColumnWidth(2, 150)
+        self.tableStudent.move(0, 0)
+        self.tableStudent.setSortingEnabled(True)
+        self.backAction.triggered.connect(self.show_table_assignment_details)
+        self.tableStudent.setWordWrap(True)
+        self.height = self.tableStudent.rowHeight(0) * row + 110
+        self.width = self.tableStudent.columnWidth(0) + self.tableStudent.columnWidth(1) + self.tableStudent.columnWidth(2) + 60
+        self.fetchSubmissionButton.move(self.width - 130, 0)
+        self.fetchSubmissionButton.clicked.connect(self.fetch_student_submission)
         self.setGeometry(self.left, self.top, self.width, self.height)
 
     def double_click_class(self):
@@ -273,11 +506,22 @@ class CreateTable(QWidget):
         self.assignment = self.tableAssignment.currentItem().text()
         self.create_table_assignment_details(self.class_name, self.assignment)
 
+    def double_click_student(self):
+        self.username = self.tableAssignmentDetails.currentItem().text()
+        self.username = JsonInfo(info).get_username_from_name(self.class_name, self.username)
+        self.create_table_student(self.class_name, self.username)
+
     def show_table_class(self):
         self.create_table_class()
 
     def show_table_assignment(self):
         self.create_table_assignments(self.class_name)
+
+    def show_table_assignment_details(self):
+        self.create_table_assignment_details(self.class_name, self.assignment)
+
+    def fetch_student_submission(self):
+        self.close()
 
 
 if __name__ == '__main__':
